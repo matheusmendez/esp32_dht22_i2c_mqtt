@@ -1,71 +1,152 @@
 // https://github.com/marcoschwartz/LiquidCrystal_I2C/archive/master.zip
 // https://github.com/winlinvip/SimpleDHT/archive/refs/heads/master.zip
+// https://github.com/marcoschwartz/LiquidCrystal_I2C/archive/master.zip
+// https://github.com/knolleary/pubsubclient/archive/refs/heads/master.zip
 
-#include <LiquidCrystal_I2C.h>
+#include <Arduino.h>
 #include <SimpleDHT.h>
-//#include "MQTT_Client.h"
+#include "MQTT_Client.h"
+// #include "config.h"
 // CONSTANTS
-#define LCD_COLUMNS 16
-#define LCD_ROWS  2
-#define LCD_ADDRESS 0x27
 #define DHT22 4
-
+#define BUZZER 2
+#define TEMP_MAX 30
+#define TEMP_MIN 18
+#define HUMI_MAX 60
+#define HUMI_MIN 30
+#define TIMEOUT 60000
 
 // VARS
-float temp, humi;
+float temp, humi, last, turnoff;
+bool control = false;
 
 // set LCD address, number of columns and rows
-LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMNS, LCD_ROWS);
+//LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMNS, LCD_ROWS);
 SimpleDHT22 dht22(DHT22);
 
 //PROTOTYPE
 void setup_lcd(void);
 void print_lcd(void);
 void read_sensor(void);
+void showDisplay(int line, String msg, bool clear);
+void showClimate(bool success);
+bool getClimate(void);
+void controlAlarm(void);
 
 void setup(){
-  setup_lcd();
+    Serial.begin(115200);
+    setupDisplay();
+    pinMode(BUZZER,OUTPUT);
+    digitalWrite(BUZZER,HIGH);
+    //Exibe mensagem no display
+    showDisplay(0, "Setting up mqtt...", true);
+    Serial.println("Setting up mqtt...");
+    
+    //Inicializa mqtt (conecta o esp com o wifi, configura e conecta com o servidor da ubidots)
+    if(!mqttInit())
+    {        
+        delay(3000);
+        showDisplay(0, "Failed!", false);
+        Serial.println("Failed!");
+        ESP.restart();
+    }
+    
+    showDisplay(0, "OK", false);
+    Serial.println("OK");
 }
 
 void loop(){
-  read_sensor();
-  print_lcd();
-  delay(2500);
+    //Se o esp foi desconectado do ubidots, tentamos reconectar
+    if(!client.connected())
+        reconnect();
+
+    //Lê a temperatura e umidade e exibimos no display passando uma flag (que sinaliza sucesso na leitura)
+    if(getClimate())
+        showClimate(true);
+    else
+        showClimate(false);
+
+    //Esperamos 2.5s antes de exibir o status do envio para dar efeito de pisca no display
+    delay(2500);
+    if(sendValues(temp, humi))
+    {      
+        Serial.println("Successfully sent data");
+        //showDisplay(4,"Successfully sent data", false);
+    }
+    else
+    {      
+        Serial.println("Failed to send sensor data");
+        //showDisplay(4,"Failed to send sensor data", false);
+    }
+    //Esperamos 2.5s para dar tempo de ler as mensagens acima
+    controlAlarm();
+    delay(2500); 
+    //read_sensor();
+    //print_lcd();
+    //delay(2500);
 }
 
+//Obtém temperatura e umidade do sensor
+bool getClimate(void)
+{  
+    int err = SimpleDHTErrSuccess;
 
-void setup_lcd(void)
-{
-    Serial.begin(115200);
-    // initialize LCD
-    lcd.init();
-    // turn on LCD backlight                      
-    lcd.backlight();
+    //Passamos as variáveis 'temperature' e 'humidity' por parâmetro na função chamada 'read2', elas serão retornadas por referência
+    //Se não for retornado o código de SimpleDHTErrSuccess (sucesso), exibimos o valor de erro obtido
+    if ((err = dht22.read2(&temp, &humi, NULL)) != SimpleDHTErrSuccess) 
+    {
+        Serial.print("Read DHT22 failed, err=");
+        Serial.println(err);
+
+        //Zera valores
+        temp = humi = 0;
+        return false;
+    }
+
+    return true;
 }
 
-void print_lcd(void)
+//Essa função exibe os valores com suas respectivas unidades de medida para caso a flag 'success' seja true
+//Caso a flag 'success' seja false, exibimos apenas um traço '-'
+void showClimate(bool success)
 {
-  // clears the display to print new message
-  lcd.clear();
-   // set cursor to first column, first row
-  lcd.setCursor(0, 0);
-  // print message
-  lcd.print("Temp:" + String(temp) +"\xDF" + "C");
-  // set cursor to first column, second row
-  lcd.setCursor(0,1);
-  lcd.print("Humi:" + String(humi) +"%");
+    if(success)
+    {
+        showDisplay(0, "Temp: "+String(temp)+ "\xDF" +"C", true);
+        showDisplay(1, "Humi: "+String(humi)+" %", false);
+        Serial.println("Temp: "+String(temp)+"°C");
+        Serial.println("Humi: "+String(humi)+" %");
+    }
+    else
+    {
+        showDisplay(0, "Temp: -", true);
+        showDisplay(1, "Humi: -", false);
+        Serial.println("Temp: -");
+        Serial.println("Humi: -");
+    }
 }
 
-void read_sensor(void)
+void controlAlarm(void)
 {
-  int err = SimpleDHTErrSuccess;
-  if ((err = dht22.read2(&temp, &humi, NULL)) != SimpleDHTErrSuccess) {
-    Serial.print("Read DHT22 failed, err="); Serial.print(SimpleDHTErrCode(err));
-    Serial.print(","); Serial.println(SimpleDHTErrDuration(err));
-    return;
-  }
-
-  Serial.print("Sample OK: ");
-  Serial.print((float)temp); Serial.print(" °C, ");
-  Serial.print((float)humi); Serial.println(" RH%");
+    if (temp > TEMP_MAX|| temp < TEMP_MIN|| humi > HUMI_MAX || humi < HUMI_MIN )
+    {
+        if(!control)
+        {
+            digitalWrite(BUZZER,LOW);
+            last = millis();
+            control = true;
+        }
+        else
+        {
+            if(millis()-last >= TIMEOUT)
+            {
+                control = false;
+            }
+            if(millis()-turnoff >= 5000)
+            {
+                digitalWrite(BUZZER,HIGH);
+                turnoff = millis() + TIMEOUT;
+            }
+        }
+    }
 }
