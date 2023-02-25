@@ -6,22 +6,12 @@
 #include <Arduino.h>
 #include <SimpleDHT.h>
 #include "MQTT_Client.h"
-// #include "config.h"
-// CONSTANTS
-#define DHT22 4
-#define BUZZER 2
-#define TEMP_MAX 30
-#define TEMP_MIN 18
-#define HUMI_MAX 60
-#define HUMI_MIN 30
-#define TIMEOUT 60000
+#include "config.h"
 
 // VARS
 float temp, humi, last, turnoff;
 bool control = false;
 
-// set LCD address, number of columns and rows
-//LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMNS, LCD_ROWS);
 SimpleDHT22 dht22(DHT22);
 
 //PROTOTYPE
@@ -81,9 +71,6 @@ void loop(){
     //Esperamos 2.5s para dar tempo de ler as mensagens acima
     controlAlarm();
     delay(2500); 
-    //read_sensor();
-    //print_lcd();
-    //delay(2500);
 }
 
 //Obtém temperatura e umidade do sensor

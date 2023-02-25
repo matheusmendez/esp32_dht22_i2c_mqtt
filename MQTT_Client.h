@@ -4,19 +4,7 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include "lcdI2C.h"
-//#include "config.h"
-
-//CONSTANTES
-#define WIFISSID "MULTIWIFI"//Coloque seu SSID de WiFi aqui
-#define WIFIPASSWORD "multilaser"//Coloque seu password de WiFi aqui
-#define SERVER "10.70.40.226"//IP do Servidor MQTT (broker)
-#define DEVICE_ID "sensor_ambiente_1" //ID do dispositivo (Device id, também chamado de client name)
-#define TOKEN ""//"xxxxxx" //Coloque seu TOKEN do Ubidots aqui
-#define PASSWORD ""
-//Porta padrão
-#define PORT 1883
-//Tópico aonde serão feitos os publish
-#define TOPIC "smt"
+#include "config.h"
 
 //Objeto WiFiClient usado para a conexão wifi
 WiFiClient broker;
