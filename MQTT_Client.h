@@ -73,13 +73,13 @@ void reconnect()
 }
 
 //Envia valores por mqtt
-//Exemplo: {"id":"sensor_ambiente_1", "temp":24.50, "humi":57.20}
+//Exemplo: {"id_sensor":"sensor_ambiente_1", "temp_value":24.50, "humi_value":57.20}
 bool sendValues(float temperature, float humidity)
 {
     char json[250];
 
     //Atribui para a cadeia de caracteres "json" os valores referentes a temperatura e os envia para a variável do ubidots correspondente
-    sprintf(json,  "{\"id\":\"%s\",\"temp\":%02.02f, \"humi\":%02.02f}", DEVICE_ID, temperature, temperature, humidity);  
+    sprintf(json,  "{\"id_sensor\":\"%s\",\"temp_value\":%02.02f, \"humi_value\":%02.02f}", DEVICE_ID, temperature, temperature, humidity);  
 
     if(!client.publish(TOPIC, json))
     {

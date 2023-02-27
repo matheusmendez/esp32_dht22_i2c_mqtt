@@ -1,6 +1,5 @@
 // https://github.com/marcoschwartz/LiquidCrystal_I2C/archive/master.zip
 // https://github.com/winlinvip/SimpleDHT/archive/refs/heads/master.zip
-// https://github.com/marcoschwartz/LiquidCrystal_I2C/archive/master.zip
 // https://github.com/knolleary/pubsubclient/archive/refs/heads/master.zip
 
 #include <Arduino.h>
@@ -10,6 +9,7 @@
 
 // VARS
 float temp, humi, last, turnoff;
+float last_mqtt = -TIMEOUT_MQTT;
 bool control = false;
 
 SimpleDHT22 dht22(DHT22);
@@ -32,7 +32,7 @@ void setup(){
     showDisplay(0, "Setting up mqtt...", true);
     Serial.println("Setting up mqtt...");
     
-    //Inicializa mqtt (conecta o esp com o wifi, configura e conecta com o servidor da ubidots)
+    //Inicializa mqtt (conecta o esp com o wifi, configura e conecta com o servidor mqtt)
     if(!mqttInit())
     {        
         delay(3000);
@@ -58,15 +58,19 @@ void loop(){
 
     //Esperamos 2.5s antes de exibir o status do envio para dar efeito de pisca no display
     delay(2500);
-    if(sendValues(temp, humi))
-    {      
-        Serial.println("Successfully sent data");
-        //showDisplay(4,"Successfully sent data", false);
-    }
-    else
-    {      
-        Serial.println("Failed to send sensor data");
-        //showDisplay(4,"Failed to send sensor data", false);
+    if(millis()-last_mqtt >= TIMEOUT_MQTT)
+    {
+        if(sendValues(temp, humi))
+        {      
+            Serial.println("Successfully sent data");
+            //showDisplay(4,"Successfully sent data", false);
+        }
+        else
+        {      
+            Serial.println("Failed to send sensor data");
+            //showDisplay(4,"Failed to send sensor data", false);
+        }
+        last_mqtt = millis();
     }
     //Esperamos 2.5s para dar tempo de ler as mensagens acima
     controlAlarm();

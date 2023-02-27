@@ -5,7 +5,8 @@
 #define TEMP_MIN 18
 #define HUMI_MAX 60
 #define HUMI_MIN 30
-#define TIMEOUT 60000
+#define TIMEOUT 900000
+#define TIMEOUT_MQTT 60000
 
 //WIFI
 #define WIFISSID "SSID"//Coloque seu SSID de WiFi aqui
