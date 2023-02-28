@@ -55,7 +55,7 @@ void reconnect()
         Serial.println("Attempting MQTT connection...");
 
         //Tenta conectar
-        if (client.connect(DEVICE_ID, TOKEN,""))
+        if (client.connect(DEVICE_ID, TOKEN,PASSWORD))
         {
             Serial.println("connected");
         }

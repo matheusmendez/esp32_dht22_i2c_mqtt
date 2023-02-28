@@ -9,11 +9,11 @@
 #define TIMEOUT_MQTT 60000
 
 //WIFI
-#define WIFISSID "SSID"//Coloque seu SSID de WiFi aqui
-#define WIFIPASSWORD "PASSWORD"//Coloque seu password de WiFi aqui
+#define WIFISSID "MULTIWIFI"//Coloque seu SSID de WiFi aqui
+#define WIFIPASSWORD "multilaser"//Coloque seu password de WiFi aqui
 //MQTT
-#define SERVER "IP_ADDRESS"//IP do Servidor MQTT (broker)
-#define DEVICE_ID "ID_SENSOR" //ID do dispositivo (Device id, também chamado de client name)
+#define SERVER "10.70.40.226"//IP do Servidor MQTT (broker)
+#define DEVICE_ID "sensor_ambiente_1" //ID do dispositivo (Device id, também chamado de client name)
 #define TOKEN ""//"xxxxxx" //Coloque seu TOKEN do Ubidots aqui
 #define PASSWORD ""
 //Porta padrão

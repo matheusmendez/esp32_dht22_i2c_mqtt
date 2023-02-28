@@ -1,1 +1,3 @@
 .vscode/
+esp32_dht22_i2c_mqtt.ino.esp32.bin
+*.bin
